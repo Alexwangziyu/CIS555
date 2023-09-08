@@ -48,7 +48,7 @@ public class Server {
             out.println("Content-Type: text/plain");
             out.println("Server: Server");
             out.println();
-            out.println();
+//            out.println();
             out.println(message);
         }
         private static void sendHeaders(OutputStream outputStream, String statusCode, long contentLength) throws IOException {
@@ -59,7 +59,7 @@ public class Server {
 //            out.println("Connection: keep-alive");
             out.println("Content-Length: " + contentLength);
             out.println();
-            out.println();
+//            out.println();
             out.flush(); // Flush the headers to ensure they are sent before the file data
         }
 
