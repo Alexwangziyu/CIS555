@@ -5,11 +5,16 @@ import java.nio.charset.StandardCharsets;
 
 public class Server {
 	public static void main(String[] args) {
-        if (args.length != 2) {
+		if (args.length == 0) {
+			System.out.println("Written by Ziyu Wang");
+			return;
+		}
+		
+        if (args.length != 2 && args.length != 0) {
             System.err.println("Usage: java SimpleWebServer <port>");
             System.exit(1);
         }
-
+        
         int port = Integer.parseInt(args[0]);
         String rootpath = args[1];
 
@@ -41,7 +46,8 @@ public class Server {
             PrintWriter out = new PrintWriter(outputStream, true);
             out.println("HTTP/1.1 " + statusCode);
             out.println("Content-Type: text/plain");
-            out.println("Server: MyServer");
+            out.println("Server: Server");
+            out.println();
             out.println();
             out.println(message);
         }
@@ -49,9 +55,10 @@ public class Server {
             PrintWriter out = new PrintWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8), true);
             out.println("HTTP/1.1 " + statusCode);
             out.println("Content-Type: text/plain"); // You can set the appropriate content type based on the file type
-            out.println("Server: MyServer");
-            out.println("Connection: keep-alive");
+            out.println("Server: Server");
+//            out.println("Connection: keep-alive");
             out.println("Content-Length: " + contentLength);
+            out.println();
             out.println();
             out.flush(); // Flush the headers to ensure they are sent before the file data
         }
