@@ -47,9 +47,11 @@ public class Server {
             out.println("HTTP/1.1 " + statusCode);
             out.println("Content-Type: text/plain");
             out.println("Server: Server");
+//            out.println("Content-Length: " + message.length());
+//            out.println(message);
             out.println();
 //            out.println();
-            out.println(message);
+            out.flush();
         }
         private static void sendHeaders(OutputStream outputStream, String statusCode, long contentLength) throws IOException {
             PrintWriter out = new PrintWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8), true);
@@ -86,7 +88,8 @@ public class Server {
             ByteArrayOutputStream headerStream = new ByteArrayOutputStream();
             while ((bytesRead = inputStream.read(buffer)) != -1) {
                 // Process the incoming bytes
-                for (int i = 0; i < bytesRead; i++) {
+            	int i =0;
+            	while (i<bytesRead){
                 	headerStream.write(buffer[i]);
                     if (i > 2 && buffer[i] == 10 && buffer[i - 1] == 13 && buffer[i - 2] == 10 && buffer[i - 3] == 13) {
                         // Found the double CRLF, indicating the end of headers
@@ -145,6 +148,7 @@ public class Server {
                         	System.out.println(url+"1Received: " + header);
                             if (header.startsWith("Content-Length: ")) {
                                 contentLength = Integer.parseInt(header.substring("Content-Length: ".length()));
+                                System.out.println("contentlenght: " + contentLength);
 //	                                        alive=1;
                                 // Handle content if present (for now, let's assume no message body)
                             }
@@ -154,9 +158,11 @@ public class Server {
                             }
                         }
                         if (contentLength > 0) {
+                        	System.out.println("contentLength > 0");
                             // Read and discard the request body (for now)
-                            byte[] requestBody = new byte[contentLength];
-                            inputStream.read(requestBody);
+                            System.out.println("contentLength > 2");
+                            i=i+contentLength;
+                            System.out.println("contentLength > 3");
                         }
                         // Headers are complete
                         headersComplete = true;
@@ -164,6 +170,7 @@ public class Server {
                         //break;
                         
                     }
+                    i=i+1;
                 }
                 if (headersComplete) {
                 	File file = new File(url);
