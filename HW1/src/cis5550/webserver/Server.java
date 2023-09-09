@@ -42,28 +42,69 @@ public class Server {
 	        this.clientSocket = clientSocket;
 	        this.rootpath = rootpath;
 	    }
+//	    private static void sendErrorResponse(OutputStream outputStream, String statusCode, String message) throws IOException {
+//            PrintWriter out = new PrintWriter(outputStream, true);
+//            out.println("HTTP/1.1 " + statusCode);
+//            out.println("Content-Type: text/plain");
+//            out.println("Server: Server");
+////            out.println("Content-Length: " + message.length());
+////            out.println(message);
+//            out.println();
+////            out.println();
+//            out.flush();
+//        }
+//        private static void sendHeaders(OutputStream outputStream, String statusCode, long contentLength, String contenttype) throws IOException {
+//            PrintWriter out = new PrintWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8), true);
+//            out.println("HTTP/1.1 " + statusCode);
+//            if (contenttype.equals("jpg") || contenttype.equals("jpeg")) {
+//            	out.println("Content-Type: image/jpeg");
+//            } else if (contenttype.equals("txt")) {
+//            	out.println("Content-Type: text/plain");
+//            } else if (contenttype.equals("html")) {
+//            	out.println("Content-Type: text/html");
+//            } else {
+//            	out.println("Content-Type: application/octet-stream");
+//            }
+//            out.println("Server: Server");
+////            out.println("Connection: keep-alive");
+//            out.println("Content-Length: " + contentLength);
+//            out.println();
+////            out.println();
+//            out.flush(); // Flush the headers to ensure they are sent before the file data
+//        }
 	    private static void sendErrorResponse(OutputStream outputStream, String statusCode, String message) throws IOException {
-            PrintWriter out = new PrintWriter(outputStream, true);
-            out.println("HTTP/1.1 " + statusCode);
-            out.println("Content-Type: text/plain");
-            out.println("Server: Server");
-//            out.println("Content-Length: " + message.length());
-//            out.println(message);
-            out.println();
-//            out.println();
-            out.flush();
-        }
-        private static void sendHeaders(OutputStream outputStream, String statusCode, long contentLength) throws IOException {
-            PrintWriter out = new PrintWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8), true);
-            out.println("HTTP/1.1 " + statusCode);
-            out.println("Content-Type: text/plain"); // You can set the appropriate content type based on the file type
-            out.println("Server: Server");
-//            out.println("Connection: keep-alive");
-            out.println("Content-Length: " + contentLength);
-            out.println();
-//            out.println();
-            out.flush(); // Flush the headers to ensure they are sent before the file data
-        }
+	        String response = "HTTP/1.1 " + statusCode + "\r\n" +
+	                          "Content-Type: text/plain; charset=UTF-8\r\n" +
+	                          "Server: Server\r\n" +
+	                          "\r\n";
+
+	        byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+	        outputStream.write(responseBytes);
+	        outputStream.flush();
+	    }
+
+	    private static void sendHeaders(OutputStream outputStream, String statusCode, long contentLength, String contentType) throws IOException {
+	        StringBuilder headers = new StringBuilder();
+	        headers.append("HTTP/1.1 ").append(statusCode).append("\r\n");
+
+	        if (contentType.equals("jpg") || contentType.equals("jpeg")) {
+	            headers.append("Content-Type: image/jpeg\r\n");
+	        } else if (contentType.equals("txt")) {
+	            headers.append("Content-Type: text/plain\r\n");
+	        } else if (contentType.equals("html")) {
+	            headers.append("Content-Type: text/html\r\n");
+	        } else {
+	            headers.append("Content-Type: application/octet-stream\r\n");
+	        }
+
+	        headers.append("Server: Server\r\n");
+	        headers.append("Content-Length: ").append(contentLength).append("\r\n");
+	        headers.append("\r\n");
+
+	        byte[] headersBytes = headers.toString().getBytes(StandardCharsets.UTF_8);
+	        outputStream.write(headersBytes);
+	        outputStream.flush();
+	    }
 
         private static void sendFileData(OutputStream outputStream, File file) throws IOException {
             try (FileInputStream fileInputStream = new FileInputStream(file)) {
@@ -174,7 +215,13 @@ public class Server {
                 }
                 if (headersComplete) {
                 	File file = new File(url);
-                	sendHeaders(outputStream, "200 OK", file.length());
+                    String fileName = url.substring(url.lastIndexOf('/') + 1);
+                    String fileExtension = "";
+                    int dotIndex = fileName.lastIndexOf('.');
+                    if (dotIndex >= 0 && dotIndex < fileName.length() - 1) {
+                        fileExtension = fileName.substring(dotIndex + 1);
+                    }
+                	sendHeaders(outputStream, "200 OK", file.length(),fileExtension);
                     // Send file data
                     sendFileData(outputStream, file);
                     // Reset headerStream for the next request
