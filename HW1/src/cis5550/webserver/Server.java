@@ -185,14 +185,14 @@ public class Server {
 	    } catch (IOException e) {
             e.printStackTrace();
         }
-//	        finally {
-//	            try {
-//	                // Close the clientSocket when the worker thread is done
-//	                clientSocket.close();
-//	            } catch (IOException e) {
-//	                e.printStackTrace();
-//	            }
-//	        }
+	        finally {
+	            try {
+	                // Close the clientSocket when the worker thread is done
+	                clientSocket.close();
+	            } catch (IOException e) {
+	                e.printStackTrace();
+	            }
+	        }
 	    }
 	}
 //
