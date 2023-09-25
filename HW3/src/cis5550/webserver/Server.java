@@ -79,7 +79,7 @@ public class Server {
                 Socket clientSocket = serverSocketTLS.accept();
                 System.out.println("socketget: " + path);
                 // Launch a new worker thread for each client connection
-                Thread workerThread = new Thread(new Worker(clientSocket, path,routeTable,serverInstance,"HTTP"));
+                Thread workerThread = new Thread(new Worker(clientSocket, path,routeTable,serverInstance,"HTTPS"));
                 workerThread.start();
             }
         } catch (Exception e) {
@@ -94,7 +94,7 @@ public class Server {
               Socket clientSocket = serverSocket.accept();
               System.out.println("socketget: " + path);
               // Launch a new worker thread for each client connection
-              Thread workerThread = new Thread(new Worker(clientSocket, path,routeTable,serverInstance,"HTTPS"));
+              Thread workerThread = new Thread(new Worker(clientSocket, path,routeTable,serverInstance,"HTTP"));
               workerThread.start();
           }
       } catch (IOException e) {
