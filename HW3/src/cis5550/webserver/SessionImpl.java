@@ -14,7 +14,7 @@ public class SessionImpl implements Session {
         this.sessionId = sessionId;
         this.creationTime = System.currentTimeMillis();
         this.lastAccessedTime = this.creationTime;
-        this.maxActiveInterval = 300; // Default value, no expiration
+        this.maxActiveInterval = 300*1000;
         this.attributes = new HashMap<>();
     }
     public int getinterval() {
@@ -42,7 +42,7 @@ public class SessionImpl implements Session {
 
     @Override
     public void maxActiveInterval(int seconds) {
-        this.maxActiveInterval = seconds;
+        this.maxActiveInterval = seconds*1000;
     }
     
     @Override

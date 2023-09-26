@@ -106,7 +106,7 @@ class RequestImpl implements Request {
 	  String sid = generateSessionID();
 	  Session ns = new SessionImpl(sid);
 	  Server.getsessionTable().put(sid,ns);
-	  resp.header("set-cookie", "SessionID="+sid+"; Expires="+String.valueOf(1000*ns.lastAccessedTime()+ns.getinterval()));
+	  resp.header("set-cookie", "SessionID="+sid+"; Expires="+String.valueOf(ns.lastAccessedTime()+ns.getinterval()));
 	  return ns;
   }
   public String generateSessionID() {

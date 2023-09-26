@@ -79,7 +79,7 @@ public class Server {
                 Socket clientSocket = serverSocketTLS.accept();
                 System.out.println("socketget: " + path);
                 // Launch a new worker thread for each client connection
-                Thread workerThread = new Thread(new Worker(clientSocket, path,routeTable,serverInstance,"HTTPS"));
+                Thread workerThread = new Thread(new Worker(clientSocket, path,routeTable,serverInstance));
                 workerThread.start();
             }
         } catch (Exception e) {
@@ -94,7 +94,7 @@ public class Server {
               Socket clientSocket = serverSocket.accept();
               System.out.println("socketget: " + path);
               // Launch a new worker thread for each client connection
-              Thread workerThread = new Thread(new Worker(clientSocket, path,routeTable,serverInstance,"HTTP"));
+              Thread workerThread = new Thread(new Worker(clientSocket, path,routeTable,serverInstance));
               workerThread.start();
           }
       } catch (IOException e) {
@@ -160,18 +160,17 @@ public class Server {
 	    private Map<String, RouteEntry> routeTable;
 	    private Server serverInstance;
 	    private InetSocketAddress clientAddress;
-	    private String httpType;
 	
-	    public Worker(Socket clientSocket, String rootpath,Map<String, RouteEntry> routeTable,Server serverInstance,String httpType) {
+	    public Worker(Socket clientSocket, String rootpath,Map<String, RouteEntry> routeTable,Server serverInstance) {
 	        this.clientSocket = clientSocket;
 	        this.rootpath = rootpath;
 	        this.routeTable=routeTable;
 	        this.serverInstance = serverInstance;
 	        this.clientAddress=(InetSocketAddress) clientSocket.getRemoteSocketAddress();
-	    	this.httpType = httpType;
+	    	
 	    }
 	    private void sendErrorResponse(OutputStream outputStream, String statusCode, String message) throws IOException {
-	        String response = httpType+"/1.1 " + statusCode + "\r\n" +
+	        String response = "HTTP/1.1 " + statusCode + "\r\n" +
 	                          "Content-Type: text/plain; charset=UTF-8\r\n" +
 	                          "Server: Server\r\n" +
 	                          "\r\n";
@@ -183,7 +182,7 @@ public class Server {
 
 	    private void sendHeaders(OutputStream outputStream, String statusCode, long contentLength, String contentType) throws IOException {
 	        StringBuilder headers = new StringBuilder();
-	        headers.append(httpType+"/1.1 ").append(statusCode).append("\r\n");
+	        headers.append("HTTP/1.1 ").append(statusCode).append("\r\n");
 
 	        if (contentType.equals("jpg") || contentType.equals("jpeg")) {
 	            headers.append("Content-Type: image/jpeg\r\n");
@@ -261,7 +260,7 @@ public class Server {
                         protocal = requestParts[2];
                         String httpVersion = requestParts[2];
 
-                        if ( !httpVersion.equals(httpType+"/1.1")) {
+                        if ( !httpVersion.equals("HTTP/1.1")) {
                         	sendErrorResponse(outputStream, "505 HTTP Version Not Supported", "505");
                             return;
                         }
@@ -391,7 +390,7 @@ public class Server {
                 			System.out.println("answer success");
                 			StringBuilder headers = new StringBuilder();
                 			if (resp.committed!= true) {
-                				headers.append(httpType+"/1.1 ").append("200").append(" OK").append("\r\n");
+                				headers.append("HTTP/1.1 ").append("200").append(" OK").append("\r\n");
                     	        for (Map.Entry<String, String> entry : resp.headers.entrySet()) {
                     	            headers.append(entry.getKey()).append(": ").append(entry.getValue()).append("\r\n");
                     	        }
@@ -421,7 +420,7 @@ public class Server {
 //                            resp.body("An internal server error occurred.");
 //                            resp.committed= true;
                             StringBuilder headers = new StringBuilder();
-                            headers.append(httpType+"/1.1 ").append("500").append(" Internal Server Error").append("\r\n").append("\r\n");;
+                            headers.append("HTTP/1.1 ").append("500").append(" Internal Server Error").append("\r\n").append("\r\n");;
                             byte[] headersBytes = headers.toString().getBytes(StandardCharsets.UTF_8);
                             outputStream.write(headersBytes);
                             outputStream.flush();
