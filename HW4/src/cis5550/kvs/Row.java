@@ -36,7 +36,7 @@ public class Row implements Serializable {
     values.put(key, value);
   }
 
-  public synchronized byte[] get(String key) {
+  public synchronized String get(String key) {
     if (values.get(key) == null)
       return null;
   	return new String(values.get(key));
