@@ -1,9 +1,12 @@
 package cis5550.jobs;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -228,33 +231,61 @@ public class Crawler {
                                         }
                                     }
 
+//                                    Row r = new Row(Hasher.hash(urls));
+//
+//                                    BufferedReader reader = new BufferedReader(
+//                                            new InputStreamReader(connection.getInputStream()));
+//                                    String line;
+//                                    StringBuilder content = new StringBuilder();
+//                                    while ((line = reader.readLine()) != null) {
+//                                        content.append(line);
+//                                    }
+//                                    reader.close();
+//
+//                                    if (connection.getContentType() != null) {
+//                                        r.put("contentType", connection.getContentType());
+//                                        if (connection.getContentType().startsWith("text/html")) {
+//                                            r.put("page", content.toString());
+//                                        }
+//                                    }
+//                                    if (connection.getContentLength() != -1) {
+//                                        r.put("length", "" + connection.getContentLength());
+//                                    }
+//                                    
                                     Row r = new Row(Hasher.hash(urls));
 
-                                    BufferedReader reader = new BufferedReader(
-                                            new InputStreamReader(connection.getInputStream()));
-                                    String line;
-                                    StringBuilder content = new StringBuilder();
-                                    while ((line = reader.readLine()) != null) {
-                                        content.append(line);
-                                    }
-                                    reader.close();
+                                    InputStream inputStream = connection.getInputStream();
+                                    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                                    String contentType = connection.getContentType();
+                                    int contentLength = connection.getContentLength();
 
-                                    if (connection.getContentType() != null) {
-                                        r.put("contentType", connection.getContentType());
-                                        if (connection.getContentType().startsWith("text/html")) {
-                                            r.put("page", content.toString());
+                                    try {
+                                        byte[] buffer = new byte[1024]; // 你可以根据需要调整缓冲区大小
+                                        int bytesRead;
+                                        while ((bytesRead = inputStream.read(buffer)) != -1) {
+                                            byteArrayOutputStream.write(buffer, 0, bytesRead);
                                         }
-                                    }
-                                    if (connection.getContentLength() != -1) {
-                                        r.put("Length", "" + connection.getContentLength());
+                                    } finally {
+                                        inputStream.close();
                                     }
 
+                                    r.put("contentType", contentType);
+                                    if (contentType != null && contentType.startsWith("text/html")) {
+                                        r.put("page", byteArrayOutputStream.toByteArray());
+                                    }
+                                    if (contentLength != -1) {
+                                        r.put("length",""+ connection.getContentLength());
+                                    }
+                                    
+                         
                                     r.put("url", urls);
                                     r.put("responseCode", "" + responseCode);
 
                                     context.getKVS().putRow("pt-crawl", r);
                                     System.out.print("add" + urls + "to pt");
-                                    results = extracturl(content.toString());
+                                    byte[] byteArray = byteArrayOutputStream.toByteArray();
+                                    String contentAsString = new String(byteArray, StandardCharsets.UTF_8);
+                                    results = extracturl(contentAsString);
                                     System.out.println(urls + "has" + results);
 
                                     List<String> updatedResults = new ArrayList<>();
