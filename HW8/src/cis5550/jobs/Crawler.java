@@ -199,32 +199,35 @@ public class Crawler {
                                 int responseCode = connection.getResponseCode();
                                 System.out.print("code" + urls + ":" + responseCode);
                                 if (responseCode == 200) {
-	                            	 seedurl = URLParser.parseURL(urls);
-	                            	 if(seedurl[0]==null ||(!seedurl[0].toLowerCase().equals("http")&&!seedurl[0].toLowerCase().equals("https"))) {
-	                            		 return results;
-	                            	 }
-	                                 int lastIndex = seedurl[3].lastIndexOf("/");
-	                                 String path = "/";
-	                                 if (lastIndex != -1) {
-	                                     path = seedurl[3].substring(0, lastIndex + 1);
-	                                 }
-	                                 if(seedurl[3]!=null &&(seedurl[3].endsWith(".jpg") ||seedurl[3].endsWith(".jpeg")||seedurl[3].endsWith(".gif")||seedurl[3].endsWith(".png")||seedurl[3].endsWith(".txt"))) {
-	                            		 return results;
-	                            	 }
-	                                 String beforepath = "";
-	                                 
-	                                 if (seedurl[2] != null) {
-	                                     beforepath = seedurl[0] + "://" + seedurl[1] + ":" + seedurl[2];
-	                                 } else {
-	                                     if (seedurl[0].toLowerCase().equals("http")) {
-	                                         beforepath = seedurl[0] + "://" + seedurl[1] + ":" + "80";
-	                                     } else if(seedurl[0].toLowerCase().equals("https")){
-	                                         beforepath = seedurl[0] + "://" + seedurl[1] + ":" + "8000";
-	                                     }else {
-	                                    	 return results;
-	                                     }
-	                                 }
-                                     
+                                    seedurl = URLParser.parseURL(urls);
+                                    if (seedurl[0] == null || (!seedurl[0].toLowerCase().equals("http")
+                                            && !seedurl[0].toLowerCase().equals("https"))) {
+                                        return results;
+                                    }
+                                    int lastIndex = seedurl[3].lastIndexOf("/");
+                                    String path = "/";
+                                    if (lastIndex != -1) {
+                                        path = seedurl[3].substring(0, lastIndex + 1);
+                                    }
+                                    if (seedurl[3] != null && (seedurl[3].endsWith(".jpg")
+                                            || seedurl[3].endsWith(".jpeg") || seedurl[3].endsWith(".gif")
+                                            || seedurl[3].endsWith(".png") || seedurl[3].endsWith(".txt"))) {
+                                        return results;
+                                    }
+                                    String beforepath = "";
+
+                                    if (seedurl[2] != null) {
+                                        beforepath = seedurl[0] + "://" + seedurl[1] + ":" + seedurl[2];
+                                    } else {
+                                        if (seedurl[0].toLowerCase().equals("http")) {
+                                            beforepath = seedurl[0] + "://" + seedurl[1] + ":" + "80";
+                                        } else if (seedurl[0].toLowerCase().equals("https")) {
+                                            beforepath = seedurl[0] + "://" + seedurl[1] + ":" + "8000";
+                                        } else {
+                                            return results;
+                                        }
+                                    }
+
                                     Row r = new Row(Hasher.hash(urls));
 
                                     BufferedReader reader = new BufferedReader(
@@ -239,11 +242,11 @@ public class Crawler {
                                     if (connection.getContentType() != null) {
                                         r.put("contentType", connection.getContentType());
                                         if (connection.getContentType().startsWith("text/html")) {
-                                            r.put("page", "--thisispage--");
+                                            r.put("page", content.toString());
                                         }
                                     }
                                     if (connection.getContentLength() != -1) {
-                                        r.put("Length", ""+connection.getContentLength());
+                                        r.put("Length", "" + connection.getContentLength());
                                     }
 
                                     r.put("url", urls);
