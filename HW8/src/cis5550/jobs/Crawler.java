@@ -118,7 +118,7 @@ public class Crawler {
             context.output("Error: Provide a single seed URL as an argument.");
         } else {
 
-            context.output("OK");
+            context.output("OKssss");
             String url = args[0];
             context.output(url);
             List<String> urlList = new ArrayList<>();
@@ -133,46 +133,72 @@ public class Crawler {
                 context.getKVS().delete("pt-crawl");
                 while (rdd.count() != 0) {
 
-                    System.out.println("thecount:" + rdd.count() + "");
-
+                    System.out.println("thezzzzzzcount:" + rdd.count() + "");
+                    
                     rdd = (FlameRDDImpl) rdd.flatMap(urls -> {
                         List<String> results = new ArrayList<>();
+                        //-------add port-------------
                         String[] seedurl = URLParser.parseURL(urls);
-                        Row visitrecord = context.getKVS().getRow("pt-crawl", Hasher.hash(urls));
-                        Row hostrecord = context.getKVS().getRow("visit-history", Hasher.hash(seedurl[1] + seedurl[2]));
-                        if (visitrecord != null) {
-                            if (visitrecord.get("responseCode").equals("200")) {
+                        if (seedurl[0] == null || (!seedurl[0].toLowerCase().equals("http")
+                                && !seedurl[0].toLowerCase().equals("https"))) {
+                            return results;
+                        }
+                        int lastIndex = seedurl[3].lastIndexOf("/");
+                        String path = "";
+                        if (lastIndex != -1) {
+                            path = seedurl[3].substring(0, lastIndex + 1);
+                        }
+                        if (seedurl[3] != null && (seedurl[3].endsWith(".jpg")
+                                || seedurl[3].endsWith(".jpeg") || seedurl[3].endsWith(".gif")
+                                || seedurl[3].endsWith(".png") || seedurl[3].endsWith(".txt"))) {
+                            return results;
+                        }
+                        String beforepath = "";
+
+                        if (seedurl[2] != null) {
+                            beforepath = seedurl[0] + "://" + seedurl[1] + ":" + seedurl[2];
+                        } else {
+                            if (seedurl[0].toLowerCase().equals("http")) {
+                                beforepath = seedurl[0] + "://" + seedurl[1] + ":" + "80";
+                            } else if (seedurl[0].toLowerCase().equals("https")) {
+                                beforepath = seedurl[0] + "://" + seedurl[1] + ":" + "8000";
+                            } else {
                                 return results;
                             }
+                        }
+                        urls = beforepath+seedurl[3];
+                        //----------check visited and allowed-------
+                        Row visitrecord = context.getKVS().getRow("pt-crawl", Hasher.hash(urls));
+                        Row hostrecord = context.getKVS().getRow("visit-history", Hasher.hash(seedurl[1] + seedurl[2]));
+                        if (visitrecord != null) { 
+                        	return results;
+                            
                         }
                         if (hostrecord == null) {
                             addhostrecord(context, seedurl);
                         }
+                        
                         hostrecord = context.getKVS().getRow("visit-history", Hasher.hash(seedurl[1] + seedurl[2]));
                         String allowed = hostrecord.get("allow");
-                        String disallowed = hostrecord.get("disallow");
+                        //String disallowed = hostrecord.get("disallow");
                         int isallowed = 1;
-                        for (String i : disallowed.split(",")) {
-                            if (seedurl[3].startsWith(i)) {
-                                isallowed = 0;
+                        System.out.println("allowed:"+allowed);
+                        for (String i : allowed.split(",")) {
+                            if (i.startsWith("Disallow: ") && seedurl[3].startsWith(i.substring("Disallow: ".length()))){
+                            	isallowed = 0;
                                 break;
                             }
+                            if (i.startsWith("Allow: ") && seedurl[3].startsWith(i.substring("Allow: ".length()))){
+                            	isallowed = 1;
+                                break;
+                            }          
                         }
-                        if (isallowed == 0) {
-                            for (String i : allowed.split(",")) {
-                                if (seedurl[3].startsWith(i)) {
-                                    isallowed = 1;
-                                    break;
-                                }
-                            }
-                        }
+                        
                         if (isallowed == 0) {
                             return results;
                         }
-
-                        try {
-                            URL urlObj = new URL(urls);
-                            // String[] seedurl = URLParser.parseURL(urls);
+                        System.out.println("passurl"+seedurl[3]);
+                        try {  
                             Row curtimerow = context.getKVS().getRow("visit-history",
                                     Hasher.hash(seedurl[1] + seedurl[2]));
                             long currentTime = System.currentTimeMillis();
@@ -185,16 +211,17 @@ public class Crawler {
                             } else {
                                 curtimerow.put("time", System.currentTimeMillis() + "");
                             }
-
+                            URL urlObj = new URL(urls);
                             HttpURLConnection headconnection = (HttpURLConnection) urlObj.openConnection();
                             headconnection.setRequestMethod("HEAD");
-                            // headconnection.setRequestHEAD("cis5550-crawler");
-                            // headconnection.
                             headconnection.connect();
                             int headResponseCode = headconnection.getResponseCode();
-
+                            if( headconnection.getContentType()!=null && !headconnection.getContentType().startsWith("text/html")) {
+                            	return results;
+                            }
                             // Check if the HEAD response code is 200 and content type is acceptable
                             if (headResponseCode == 200) {
+                            	
                                 URL urlOb = new URL(urls);
                                 HttpURLConnection connection = (HttpURLConnection) urlOb.openConnection();
                                 connection.setRequestMethod("GET");
@@ -202,58 +229,8 @@ public class Crawler {
                                 int responseCode = connection.getResponseCode();
                                 System.out.print("code" + urls + ":" + responseCode);
                                 if (responseCode == 200) {
-                                    seedurl = URLParser.parseURL(urls);
-                                    if (seedurl[0] == null || (!seedurl[0].toLowerCase().equals("http")
-                                            && !seedurl[0].toLowerCase().equals("https"))) {
-                                        return results;
-                                    }
-                                    int lastIndex = seedurl[3].lastIndexOf("/");
-                                    String path = "/";
-                                    if (lastIndex != -1) {
-                                        path = seedurl[3].substring(0, lastIndex + 1);
-                                    }
-                                    if (seedurl[3] != null && (seedurl[3].endsWith(".jpg")
-                                            || seedurl[3].endsWith(".jpeg") || seedurl[3].endsWith(".gif")
-                                            || seedurl[3].endsWith(".png") || seedurl[3].endsWith(".txt"))) {
-                                        return results;
-                                    }
-                                    String beforepath = "";
-
-                                    if (seedurl[2] != null) {
-                                        beforepath = seedurl[0] + "://" + seedurl[1] + ":" + seedurl[2];
-                                    } else {
-                                        if (seedurl[0].toLowerCase().equals("http")) {
-                                            beforepath = seedurl[0] + "://" + seedurl[1] + ":" + "80";
-                                        } else if (seedurl[0].toLowerCase().equals("https")) {
-                                            beforepath = seedurl[0] + "://" + seedurl[1] + ":" + "8000";
-                                        } else {
-                                            return results;
-                                        }
-                                    }
-
-//                                    Row r = new Row(Hasher.hash(urls));
-//
-//                                    BufferedReader reader = new BufferedReader(
-//                                            new InputStreamReader(connection.getInputStream()));
-//                                    String line;
-//                                    StringBuilder content = new StringBuilder();
-//                                    while ((line = reader.readLine()) != null) {
-//                                        content.append(line);
-//                                    }
-//                                    reader.close();
-//
-//                                    if (connection.getContentType() != null) {
-//                                        r.put("contentType", connection.getContentType());
-//                                        if (connection.getContentType().startsWith("text/html")) {
-//                                            r.put("page", content.toString());
-//                                        }
-//                                    }
-//                                    if (connection.getContentLength() != -1) {
-//                                        r.put("length", "" + connection.getContentLength());
-//                                    }
 //                                    
                                     Row r = new Row(Hasher.hash(urls));
-
                                     InputStream inputStream = connection.getInputStream();
                                     ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
                                     String contentType = connection.getContentType();
@@ -280,9 +257,9 @@ public class Crawler {
                          
                                     r.put("url", urls);
                                     r.put("responseCode", "" + responseCode);
-
                                     context.getKVS().putRow("pt-crawl", r);
                                     System.out.print("add" + urls + "to pt");
+                                    
                                     byte[] byteArray = byteArrayOutputStream.toByteArray();
                                     String contentAsString = new String(byteArray, StandardCharsets.UTF_8);
                                     results = extracturl(contentAsString);
@@ -314,22 +291,57 @@ public class Crawler {
                                         }
                                         updatedResults.add(rawurl);
                                     }
-
                                     return updatedResults;
+                                }else if (responseCode == 301 || responseCode == 302 || responseCode == 303
+                                        || responseCode == 307 || responseCode == 308) {
+                                	Row r = new Row(Hasher.hash(urls));
+                                    r.put("url", urls);
+                                    r.put("responseCode", "" + headResponseCode);
+                                    context.getKVS().putRow("pt-crawl", r);
+                                    String redirectUrl = headconnection.getHeaderField("Location");
+                                    results.add(redirectUrl);
+                                    return results;
+                                }else{
+                                	Row r = new Row(Hasher.hash(urls));
+                                    r.put("url", urls);
+                                    r.put("responseCode", "" + headResponseCode);
+                                    context.getKVS().putRow("pt-crawl", r);
                                 }
                             } else if (headResponseCode == 301 || headResponseCode == 302 || headResponseCode == 303
                                     || headResponseCode == 307 || headResponseCode == 308) {
-                                // System.out.print("redirect"+urls+"to"+headResponseCode);
+
                                 Row r = new Row(Hasher.hash(urls));
                                 r.put("url", urls);
                                 r.put("responseCode", "" + headResponseCode);
                                 context.getKVS().putRow("pt-crawl", r);
                                 String redirectUrl = headconnection.getHeaderField("Location");
+//                                int fragmentIndex = redirectUrl.indexOf("#");
+//                                if (fragmentIndex != -1) {
+//                                	redirectUrl = redirectUrl.substring(0, fragmentIndex);
+//                                }
+//                                if (redirectUrl.equals("")) {
+//                                    return result;
+//                                }
+//                                if (redirectUrl.startsWith("/")) {
+//                                	redirectUrl = beforepath + rawurl;
+//                                } else {
+//                                	redirectUrl = beforepath + path + rawurl;
+//                                }
+//                                while (redirectUrl.contains("..")) {
+//                                    int index = redirectUrl.indexOf("..");
+//                                    int slashIndex = redirectUrl.lastIndexOf('/', index - 2);
+//                                    if (slashIndex != -1) {
+//                                    	redirectUrl = redirectUrl.substring(0, slashIndex) + redirectUrl.substring(index + 2);
+//                                    } else {
+//                                        break;
+//                                    }
+//                                }
                                 results.add(redirectUrl);
-                                System.out.println("redirect" + urls + "to" + headResponseCode + redirectUrl);
                                 return results;
                             } else {
-                                System.out.println("error" + urls + "to" + headResponseCode);
+                            	Row r = new Row(Hasher.hash(urls));
+                                r.put("url", urls);
+                                r.put("responseCode", "" + headResponseCode);
                             }
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -379,6 +391,7 @@ public class Crawler {
     public static String[] getrobotstxt(String URL) {
         try {
             URL urlOb = new URL(URL + "/robots.txt");
+            System.out.println("robor:"+URL + "/robots.txt");
             HttpURLConnection connection = (HttpURLConnection) urlOb.openConnection();
             connection.setRequestMethod("GET");
             connection.connect();
@@ -397,7 +410,6 @@ public class Crawler {
 
                 // 解析 robots.txt 内容
                 String[] lines = robotstxtContent.toString().split("\n");
-                List<String> disallowRules = new ArrayList<>();
                 List<String> allowRules = new ArrayList();
                 String delay = "1";
                 boolean specificRules = false; // 是否有特定的规则适用于 "cis5550-crawler" User-agent
@@ -406,30 +418,53 @@ public class Crawler {
                     String trimmedLine = robotstxtLine.trim();
 
                     // 检查是否有特定User-agent规则
-                    if (trimmedLine.equalsIgnoreCase("User-agent: cis5550-crawler")) {
+                    if (trimmedLine.equals("User-agent: cis5550-crawler")) {
                         specificRules = true;
                         continue;
                     } else if (specificRules && trimmedLine.startsWith("Disallow: ")) {
-                        disallowRules.add(trimmedLine.substring("Disallow: ".length()));
+                    	allowRules.add(trimmedLine);
                     } else if (specificRules && trimmedLine.startsWith("Allow: ")) {
-                        allowRules.add(trimmedLine.substring("Allow: ".length()));
-                    } else if (trimmedLine.equalsIgnoreCase("User-agent: *")) {
-                        specificRules = false; // 恢复到通配符(*)规则
+                        allowRules.add(trimmedLine);
                     } else if (specificRules && trimmedLine.startsWith("Crawl-delay: ")) {
                         delay = (trimmedLine.substring("Crawl-delay: ".length()));
                     }
+                    if(specificRules && trimmedLine.startsWith("User-agent:")){
+                    	break;
+                    }
+                    
+                }
+                if(specificRules == false) {
+                	for (String robotstxtLine : lines) {
+                        String trimmedLine = robotstxtLine.trim();
+
+                        // 检查是否有特定User-agent规则
+                        if (trimmedLine.equals("User-agent: *")) {
+                            specificRules = true;
+                            continue;
+                        } else if (specificRules && trimmedLine.startsWith("Disallow: ")) {
+                        	allowRules.add(trimmedLine);
+                        } else if (specificRules && trimmedLine.startsWith("Allow: ")) {
+                            allowRules.add(trimmedLine);
+                        } else if (specificRules && trimmedLine.startsWith("Crawl-delay: ")) {
+                            delay = (trimmedLine.substring("Crawl-delay: ".length()));
+                        }
+                        if(specificRules && trimmedLine.startsWith("User-agent:")){
+                        	break;
+                        }
+//                        .substring("Disallow: ".length())
+                    }
                 }
                 String disallowString = "";
-                if (!disallowRules.isEmpty()) {
-                    disallowString = String.join(",", disallowRules); // 没有 Disallow 规则
-                }
+//                if (!disallowRules.isEmpty()) {
+//                    disallowString = String.join(",", disallowRules); // 没有 Disallow 规则
+//                }
                 String allowString = "";
                 if (!allowRules.isEmpty()) {
                     allowString = String.join(",", allowRules); // 没有 Disallow 规则
                 }
 
                 // 返回 Disallow 和 Allow 规则
-                return new String[] { disallowString, allowString, delay };
+                return new String[] {allowString, delay};
             } else {
                 return null; // 没有 robots.txt 文件
             }
@@ -462,13 +497,11 @@ public class Crawler {
         Row visitrow = new Row(Hasher.hash(seedurl1[1] + seedurl1[2]));
         visitrow.put("time", "" + System.currentTimeMillis());
         if (rules == null) {
-            visitrow.put("disallow", "");
             visitrow.put("allow", "");
             visitrow.put("delay", "1");
         } else {
-            visitrow.put("disallow", rules[0]);
-            visitrow.put("allow", rules[1]);
-            visitrow.put("delay", rules[2]);
+            visitrow.put("allow", rules[0]);
+            visitrow.put("delay", rules[1]);
         }
         try {
             context.getKVS().putRow("visit-history", visitrow);
@@ -477,4 +510,7 @@ public class Crawler {
             e.printStackTrace();
         }
     }
+//    public static String[] addport(String url) {
+//    	
+//    }
 }
