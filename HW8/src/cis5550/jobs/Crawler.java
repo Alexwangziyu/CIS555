@@ -182,7 +182,7 @@ public class Crawler {
                         String allowed = hostrecord.get("allow");
                         //String disallowed = hostrecord.get("disallow");
                         int isallowed = 1;
-                        System.out.println("allowed:"+allowed);
+//                        System.out.println("allowed:"+allowed);
                         for (String i : allowed.split(",")) {
                             if (i.startsWith("Disallow: ") && seedurl[3].startsWith(i.substring("Disallow: ".length()))){
                             	isallowed = 0;
@@ -197,7 +197,7 @@ public class Crawler {
                         if (isallowed == 0) {
                             return results;
                         }
-                        System.out.println("passurl"+seedurl[3]);
+//                        System.out.println("passurl"+seedurl[3]);
                         try {  
                             Row curtimerow = context.getKVS().getRow("visit-history",
                                     Hasher.hash(seedurl[1] + seedurl[2]));
@@ -214,6 +214,7 @@ public class Crawler {
                             URL urlObj = new URL(urls);
                             HttpURLConnection headconnection = (HttpURLConnection) urlObj.openConnection();
                             headconnection.setRequestMethod("HEAD");
+                            HttpURLConnection.setFollowRedirects(false);
                             headconnection.connect();
                             int headResponseCode = headconnection.getResponseCode();
                             if( headconnection.getContentType()!=null && !headconnection.getContentType().startsWith("text/html")) {
@@ -221,13 +222,12 @@ public class Crawler {
                             }
                             // Check if the HEAD response code is 200 and content type is acceptable
                             if (headResponseCode == 200) {
-                            	
                                 URL urlOb = new URL(urls);
                                 HttpURLConnection connection = (HttpURLConnection) urlOb.openConnection();
                                 connection.setRequestMethod("GET");
+                                HttpURLConnection.setFollowRedirects(false);
                                 connection.connect();
                                 int responseCode = connection.getResponseCode();
-                                System.out.print("code" + urls + ":" + responseCode);
                                 if (responseCode == 200) {
 //                                    
                                     Row r = new Row(Hasher.hash(urls));
@@ -253,17 +253,16 @@ public class Crawler {
                                     if (contentLength != -1) {
                                         r.put("length",""+ connection.getContentLength());
                                     }
-                                    
                          
                                     r.put("url", urls);
                                     r.put("responseCode", "" + responseCode);
                                     context.getKVS().putRow("pt-crawl", r);
-                                    System.out.print("add" + urls + "to pt");
+                                    System.out.println("add--" + urls + "--to pt");
                                     
                                     byte[] byteArray = byteArrayOutputStream.toByteArray();
                                     String contentAsString = new String(byteArray, StandardCharsets.UTF_8);
                                     results = extracturl(contentAsString);
-                                    System.out.println(urls + "has" + results);
+//                                    System.out.println(urls + "has" + results);
 
                                     List<String> updatedResults = new ArrayList<>();
                                     for (String rawurl : results) {
@@ -296,52 +295,54 @@ public class Crawler {
                                         || responseCode == 307 || responseCode == 308) {
                                 	Row r = new Row(Hasher.hash(urls));
                                     r.put("url", urls);
-                                    r.put("responseCode", "" + headResponseCode);
+                                    r.put("responseCode", "" + responseCode);
                                     context.getKVS().putRow("pt-crawl", r);
-                                    String redirectUrl = headconnection.getHeaderField("Location");
+                                    String redirectUrl = connection.getHeaderField("Location");
                                     results.add(redirectUrl);
                                     return results;
                                 }else{
                                 	Row r = new Row(Hasher.hash(urls));
                                     r.put("url", urls);
-                                    r.put("responseCode", "" + headResponseCode);
+                                    r.put("responseCode", "" + responseCode);
                                     context.getKVS().putRow("pt-crawl", r);
                                 }
                             } else if (headResponseCode == 301 || headResponseCode == 302 || headResponseCode == 303
                                     || headResponseCode == 307 || headResponseCode == 308) {
-
                                 Row r = new Row(Hasher.hash(urls));
                                 r.put("url", urls);
                                 r.put("responseCode", "" + headResponseCode);
                                 context.getKVS().putRow("pt-crawl", r);
+                                System.out.println("respond:" + headResponseCode+"---"+urls+headconnection.getHeaderField("Location"));
                                 String redirectUrl = headconnection.getHeaderField("Location");
-//                                int fragmentIndex = redirectUrl.indexOf("#");
-//                                if (fragmentIndex != -1) {
-//                                	redirectUrl = redirectUrl.substring(0, fragmentIndex);
-//                                }
-//                                if (redirectUrl.equals("")) {
-//                                    return result;
-//                                }
-//                                if (redirectUrl.startsWith("/")) {
-//                                	redirectUrl = beforepath + rawurl;
-//                                } else {
-//                                	redirectUrl = beforepath + path + rawurl;
-//                                }
-//                                while (redirectUrl.contains("..")) {
-//                                    int index = redirectUrl.indexOf("..");
-//                                    int slashIndex = redirectUrl.lastIndexOf('/', index - 2);
-//                                    if (slashIndex != -1) {
-//                                    	redirectUrl = redirectUrl.substring(0, slashIndex) + redirectUrl.substring(index + 2);
-//                                    } else {
-//                                        break;
-//                                    }
-//                                }
+                                int fragmentIndex = redirectUrl.indexOf("#");
+                                if (fragmentIndex != -1) {
+                                	redirectUrl = redirectUrl.substring(0, fragmentIndex);
+                                }
+                                if (redirectUrl.equals("")) {
+                                    return results;
+                                }
+                                if (redirectUrl.startsWith("/")) {
+                                	redirectUrl = beforepath + redirectUrl;
+                                } else {
+                                	redirectUrl = beforepath + path + redirectUrl;
+                                }
+                                while (redirectUrl.contains("..")) {
+                                    int index = redirectUrl.indexOf("..");
+                                    int slashIndex = redirectUrl.lastIndexOf('/', index - 2);
+                                    if (slashIndex != -1) {
+                                    	redirectUrl = redirectUrl.substring(0, slashIndex) + redirectUrl.substring(index + 2);
+                                    } else {
+                                        break;
+                                    }
+                                }
+                                //System.out.println("respond:" + headResponseCode+"---"+urls+" to:"+headconnection.getHeaderField("Location"));
                                 results.add(redirectUrl);
                                 return results;
                             } else {
                             	Row r = new Row(Hasher.hash(urls));
                                 r.put("url", urls);
                                 r.put("responseCode", "" + headResponseCode);
+                                context.getKVS().putRow("pt-crawl", r);
                             }
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -391,7 +392,7 @@ public class Crawler {
     public static String[] getrobotstxt(String URL) {
         try {
             URL urlOb = new URL(URL + "/robots.txt");
-            System.out.println("robor:"+URL + "/robots.txt");
+//            System.out.println("robor:"+URL + "/robots.txt");
             HttpURLConnection connection = (HttpURLConnection) urlOb.openConnection();
             connection.setRequestMethod("GET");
             connection.connect();
@@ -506,7 +507,7 @@ public class Crawler {
         try {
             context.getKVS().putRow("visit-history", visitrow);
         } catch (Exception e) {
-            System.out.println(seedurl1[1] + seedurl1[2] + rules[0] + rules[1]);
+//            System.out.println(seedurl1[1] + seedurl1[2] + rules[0] + rules[1]);
             e.printStackTrace();
         }
     }
