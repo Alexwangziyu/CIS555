@@ -40,7 +40,7 @@ public class PageRank {
                        beforepath = seedurl[0] + "://" + seedurl[1] + ":" + "8000";
                    }
                }
-               System.out.println("22222");
+//               System.out.println("22222");
                //get internal url list
                String internalurls = "1.0,1.0";
                HashSet<String> uniqueurl = new HashSet<>();

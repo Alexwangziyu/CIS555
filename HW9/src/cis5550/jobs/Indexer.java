@@ -59,6 +59,9 @@ public class Indexer {
 //	   	        return pairlist;
 //	   	     });
 	    FlamePairRDD finalresult = mappair.foldByKey("",((url1,url2) -> {
+	    	if(url1.equals("")){
+	    	return url2;
+	    }
 	    	return url1+","+url2;
 	    }));
 	    finalresult.saveAsTable("pt-index");
