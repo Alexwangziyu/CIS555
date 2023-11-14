@@ -143,7 +143,7 @@ public class PageRank {
 	     		return s1;
 	     	}
 	     });
-	     if(Double.parseDouble(max)<=0.01) {
+	     if(Double.parseDouble(max)<=Double.parseDouble(args[0])) {
 	    	 break;
 	     }
 	     }
