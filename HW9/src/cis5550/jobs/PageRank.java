@@ -51,7 +51,25 @@ public class PageRank {
 	                   rawurl = rawurl.substring(0, fragmentIndex);
 	               }
 	               if (rawurl.equals("")) {
-	                   continue;
+	            	   if ( uniqueurl.add(url)) {
+		            	   internalurls+=(","+url);
+		               }
+	            	   continue;
+	               }
+	               String[] splittedurl = URLParser.parseURL(rawurl);
+	               if(splittedurl[0] != null) {
+	            	   if (splittedurl[2] != null) {
+	                   } else {
+	                       if (splittedurl[0].toLowerCase().equals("http")) {
+	                    	   rawurl = splittedurl[0] + "://" + splittedurl[1] + ":" + "80"+splittedurl[3];
+	                       } else if (seedurl[0].toLowerCase().equals("https")) {
+	                    	   rawurl = splittedurl[0] + "://" + splittedurl[1] + ":" + "8000"+splittedurl[3];
+	                       }
+	                   }
+	            	   if ( uniqueurl.add(rawurl)) {
+		            	   internalurls+=(","+rawurl);
+		               }
+	            	   continue;
 	               }
 	               if (rawurl.startsWith("/")) {
 	                   rawurl = beforepath + rawurl;
@@ -83,10 +101,10 @@ public class PageRank {
 	     System.out.println("33333");
 	     int iii =0;
 	     while(true) {
-	    	 System.out.println(iii+"iii");
-	    	 iii+=1;
-	     FlamePairRDD result1 = result.flatMapToPair(pair -> {
-	    	 String[] urls = pair._2().split(",");
+		    System.out.println(iii+"iii");
+		    iii+=1;
+		    FlamePairRDD result1 = result.flatMapToPair(pair -> {
+		    	 String[] urls = pair._2().split(",");
 	    	 double rc = Double.parseDouble(urls[0]);
 	    	 double rp = Double.parseDouble(urls[1]);
 	    	 List<FlamePair> pairlist = new ArrayList<>();
@@ -96,56 +114,56 @@ public class PageRank {
 	    		 FlamePair p = new FlamePair(urls[i],(0.85*rc/n)+"");
 	    		 pairlist.add(p);
 	    	 }
-	    	 FlamePair p = new FlamePair(pair._1(),"0");
-    		 pairlist.add(p);
-	    	 return pairlist; 
-	     });
-	     FlamePairRDD finalresult = result1.foldByKey("0", (v1,v2)->{
-	    	 Double v11 = Double.parseDouble(v1);
-	    	 Double vresult =  Double.parseDouble(v1)+Double.parseDouble(v2);
-	    	 return vresult+"";
-	     });
-	     FlamePairRDD joinedresult = result.join(finalresult);
-	     result = joinedresult.flatMapToPair(pair ->{
-	    	 String[] urls = pair._2().split(",");
-	    	 System.out.println(pair._1()+"RCRCRC:"+urls[urls.length-1]);
-	    	 System.out.println("rp:"+urls[0]);
-	    	 String rc = (Double.parseDouble(urls[urls.length-1])+0.15)+"";
-	    	 String rp = urls[0];
-	    	 urls[0]=rc;
-	    	 urls[1]=rp;
-	    	 List<FlamePair> pairlist = new ArrayList<>();
-//	    	 int n = urls.length -2;
-	    	 String pairb = "";
-	    	 for(int i =0; i< urls.length-1;i++){
-	    		 if(i ==0) {
-	    			 pairb += urls[i];
-	    		 }
-	    		 else {
-	    			 pairb += ","+urls[i];
-	    		 }
-	    	 }
-	    	 System.out.println(pair._1()+"+++"+pairb);
-	    	 pairlist.add(new FlamePair(pair._1(),pairb));
-	    	 return pairlist;     	 
-	     });
-	     FlameRDD diff = result.flatMap(pair -> {
-	    	 List<String> diff1 = new ArrayList<>();
-	    	 String[] urls = pair._2().split(",");
-	    	 String difference = "" + Math.abs((Double.parseDouble(urls[0])-Double.parseDouble(urls[1])));
-	    	 diff1.add(difference);
-	    	 return diff1;
-	     });
-	     String max = diff.fold("0",(s1,s2)->{
-	     	if (Double.parseDouble(s2)>Double.parseDouble(s1)) {
-	     		return s2;
-	     	}else {
-	     		return s1;
-	     	}
-	     });
-	     if(Double.parseDouble(max)<=Double.parseDouble(args[0])) {
-	    	 break;
-	     }
+		    	 FlamePair p = new FlamePair(pair._1(),"0");
+	    		 pairlist.add(p);
+		    	 return pairlist; 
+		     });
+		     FlamePairRDD finalresult = result1.foldByKey("0", (v1,v2)->{
+		    	 Double v11 = Double.parseDouble(v1);
+		    	 Double vresult =  Double.parseDouble(v1)+Double.parseDouble(v2);
+		    	 return vresult+"";
+		     });
+		     FlamePairRDD joinedresult = result.join(finalresult);
+		     result = joinedresult.flatMapToPair(pair ->{
+		    	 String[] urls = pair._2().split(",");
+		    	 System.out.println(pair._1()+"RCRCRC:"+urls[urls.length-1]);
+		    	 System.out.println("rp:"+urls[0]);
+		    	 String rc = (Double.parseDouble(urls[urls.length-1])+0.15)+"";
+		    	 String rp = urls[0];
+		    	 urls[0]=rc;
+		    	 urls[1]=rp;
+		    	 List<FlamePair> pairlist = new ArrayList<>();
+	//	    	 int n = urls.length -2;
+		    	 String pairb = "";
+		    	 for(int i =0; i< urls.length-1;i++){
+		    		 if(i ==0) {
+		    			 pairb += urls[i];
+		    		 }
+		    		 else {
+		    			 pairb += ","+urls[i];
+		    		 }
+		    	 }
+		    	 System.out.println(pair._1()+"+++"+pairb);
+		    	 pairlist.add(new FlamePair(pair._1(),pairb));
+		    	 return pairlist;     	 
+		     });
+		     FlameRDD diff = result.flatMap(pair -> {
+		    	 List<String> diff1 = new ArrayList<>();
+		    	 String[] urls = pair._2().split(",");
+		    	 String difference = "" + Math.abs((Double.parseDouble(urls[0])-Double.parseDouble(urls[1])));
+		    	 diff1.add(difference);
+		    	 return diff1;
+		     });
+		     String max = diff.fold("0",(s1,s2)->{
+		     	if (Double.parseDouble(s2)>Double.parseDouble(s1)) {
+		     		return s2;
+		     	}else {
+		     		return s1;
+		     	}
+		     });
+			     if(Double.parseDouble(max)<=Double.parseDouble(args[0])) {
+			    	 break;
+			     }
 	     }
 	     FlamePairRDD finalpr = result.flatMapToPair(pair -> {
 	    	 List<FlamePair> prlist = new ArrayList<>();
